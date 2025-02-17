@@ -85,12 +85,27 @@ class NetworkApplication(pn.viewable.Viewer):
     def filter_filler_arcs(self, include_filler=True):
         arc_name_ranges = self._arc_name_ranges
         if not include_filler:
-            arc_name_ranges = arc_name_ranges[arc_name_ranges["Filler"] == 0]  # Filter only non-filler arcs
+            # Filter non-filler arcs
+            arc_name_ranges = arc_name_ranges[arc_name_ranges["Filler"] == 0]
+            # Update slider's end and adjust value if needed
+            max_episode_non_filler = int(arc_name_ranges.at[arc_name_ranges.index[-1], 'Episode Range/ Episodes'].split('-')[-1].strip())
+            self.episode_range_slider.end = max_episode_non_filler
+            current_start, current_end = self.episode_range_slider.value
+            if current_end > max_episode_non_filler:
+                self.episode_range_slider.value = (current_start, max_episode_non_filler)
+        else:
+            # Reset to original max episode when fillers are included
+            self.episode_range_slider.end = self.max_episode
+            current_start, current_end = self.episode_range_slider.value
+            if current_end > self.max_episode:
+                self.episode_range_slider.value = (current_start, self.max_episode)
+        
+        # Return the DataFrame pane
         return pn.pane.DataFrame(
-               arc_name_ranges.loc[:, ['Arc Name', 'Episode Range/ Episodes']],
-               index=False,
-               text_align='center'
-            ) 
+            arc_name_ranges.loc[:, ['Arc Name', 'Episode Range/ Episodes']],
+            index=False,
+            text_align='center'
+        )
     
     def calculate_relationships(self, min_episode, max_episode, include_filler=True, window=10):
         """
